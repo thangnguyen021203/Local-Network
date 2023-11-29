@@ -6,6 +6,10 @@ import time
 import sys
 import os
 import shutil
+from pyftpdlib.authorizers import DummyAuthorizer
+from pyftpdlib.handlers import FTPHandler
+from pyftpdlib.servers import FTPServer
+from ftplib import FTP
 
 _SERVER_PORT = 3000
 _PEER_PORT = 5001
@@ -14,12 +18,23 @@ _LOCAL_FILE_SYSTEM = './local-system/'
 _LOCAL_REPOSITORY = './ass/local-repo/'
 
 
+
 class peer_peer:
     
     def __init__(self):
         self.ip = socket.gethostbyname(socket.gethostname())
         self.port =_PEER_PORT
         
+    def ftpserver(self,hostname, port):
+        authorizer = DummyAuthorizer()
+        authorizer.add_user("user", "password", ".", perm="elradfmw")
+        authorizer.add_anonymous(".", perm="elradfmw")
+
+        handler = FTPHandler
+        handler.authorizer = authorizer
+
+        server = FTPServer((hostname, port), handler)
+        server.serve_forever()
         
     def receive_message_from(self,conn):
         received_data = int(pickle.loads(conn.recv(1024)))
@@ -31,6 +46,7 @@ class peer_peer:
         conn.sendall(pickle.dumps(msg))
     
     def Threadlisten(self):
+        self.ftpserver(self.ip,self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.ip,self.port))
         self.socket.listen(5)
@@ -54,13 +70,24 @@ class peer_peer:
         
         self.send_message(conn, message)
         
+        ftp = FTP()
+        ftp.connect(host, 5001)
+        ftp.login("", "")
         
+        ftp.cwd("/")
+        ftp.retrbinary("RETR " + file_name, open(f"C:/Users/Thang/Desktop/bigboss/ass/local-repo/{file_name}", "wb").write)
+        ftp.quit()
+        
+        if not os.path.exists(f'./ass/local-repo/{file_name}'):
+            print("Download Error!. Please try again.")
+        else:
+            print("Download success!")
     
+    
+
     
 class peer_server:
     def __init__(self):
-        # self.ip = socket.gethostbyname(socket.gethostname())
-        # self.port = 3001
         self.username=None
         self.password=None
         self.status = "OFF"
@@ -91,7 +118,7 @@ class peer_server:
         #message.send_message(conn)
         response = self.receive_message_from(conn).body.content
         print(response)
-        if (response == " Regist success"):
+        if (response == "Regist success"):
             if not os.path.exists('./ass/local-repo'):
         # If not existed, create new folder 
                 os.makedirs('./ass/local-repo')
@@ -139,7 +166,7 @@ class peer_server:
                         > publish "lname" "fname": a local file (which is stored in the client's file system at "lname") is added to the 
                             client's repository as a file named "fname" and this information is conveyed to the server
                         > fetch "file name": fetch some copy of the target file and add it to the local repository
-                        > download "index": download the file with the index <index> return from the fetch command to local repository on your computer""");
+                        > download "host_have_file" "file_want_to_get": download the file with the ipaddress return from the fetch command to local repository on your computer""");
                 case "stop":
                     return
                 case "fetch":
@@ -168,8 +195,10 @@ if __name__ == '__main__':
     peer_server = peer_server()
     p2p = peer_peer()
 
-    Thread(target=p2p.Threadlisten, args=()).start()
-
+    Thread_With_Peer = Thread(target=p2p.Threadlisten, args=())
+    Thread_With_Peer.setDaemon(True)
+    Thread_With_Peer.start()
+    
     conn = peer_server.connect(_SERVER_HOST,_SERVER_PORT)
     # peer.peer_client_program(_SERVER_HOST,_SERVER_PORT)
     
@@ -188,23 +217,4 @@ if __name__ == '__main__':
         peer_server.controller(conn)
     
     
-    # print(conn.recv(1024).decode())
-    # while True:
-    #     datainput=input("Add list, Get list or Exit: " )
-    #     if datainput=="Add list":
-    #         conn.
-    # (datainput.encode())
-    #         conn.send(str(port).encode()) 
-    #         print(conn.recv(1024).decode())                                 
-    #     # if datainput=="Get list":
-    #     #     conn.send(datainput.encode())
-    #     #     portlist=pickle.loads(conn.recv(1024))
-    #     #     for lport in portlist:
-    #     #         if lport!=port:
-    #     #             lconn=socket.socket()
-    #     #             lconn.connect((socket.gethostname(),lport))
-    #     #             lconn.send((f"\nHello from {port}").encode())
-    #     #     print(conn.recv(1024).decode())
-    #     if datainput=="Exit":
-    #         conn.close()
-    #         break
+    
