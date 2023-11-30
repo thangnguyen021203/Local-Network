@@ -27,8 +27,8 @@ class peer_peer:
         
     def ftpserver(self,hostname, port):
         authorizer = DummyAuthorizer()
-        authorizer.add_user("user", "password", ".", perm="elradfmw")
-        authorizer.add_anonymous(".", perm="elradfmw")
+        authorizer.add_user("user", "password", "./local-repo", perm="elradfmw")
+        authorizer.add_anonymous("./local-repo", perm="elradfmw")
 
         handler = FTPHandler
         handler.authorizer = authorizer

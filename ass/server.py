@@ -27,18 +27,18 @@ class server:
 
     def listen(self, numberlisten):
         self.serverSocket.listen(numberlisten)
-        print("Server is listening...")
+        print(f"Server {self.host} is listening...")
 
         while True:
             conn, addr = self.serverSocket.accept()
-            nconn = Thread(target=self.connection, args=(conn, addr))
+            nconn = Thread(target=self.Threadconnection, args=(conn, addr))
             nconn.start()
         
-    def connection(self, conn, addr):
+    def Threadconnection(self, conn, addr):
         print("Connect from ", addr)
         while True:
             try:
-                message = self.receive_message_from(conn)
+                message = self.receive_message(conn)
             except Exception as e:
                 print(f"{addr[0]} has closed connection")
                 conn.close()
@@ -46,14 +46,16 @@ class server:
 
             msgType=message.header.type_msg
 
-            if msgType == "regist":
-                self.regist(conn, addr[0], message.header.username, message.header.password, message.header.port) 
-            elif msgType == "login":
-                self.login(conn, addr[0], message.header.username, message.header.password)
-            elif msgType == "announce":
-                self.announce(addr[0], message.body.file_name)
-            elif msgType == "fetch":
-                self.fetch(conn, addr[0], message.body.file_name)
+            match msgType:
+                case "regist":
+                    self.regist(conn, addr[0], message.header.username, message.header.password, message.header.port) 
+                case "login":
+                    self.login(conn, addr[0], message.header.username, message.header.password)
+                case "announce":
+                    self.announce(addr[0], message.body.file_name)
+                case "fetch":
+                    self.fetch(conn, addr[0], message.body.file_name)
+
             
                 
     def regist(self, conn, ipAddress, username, password, port):
@@ -191,7 +193,7 @@ class server:
         conn.send(pickle.dumps(f"{sys.getsizeof(pickle.dumps(msg))}"))
         conn.send(pickle.dumps(msg))
 
-    def receive_message_from(self,conn):
+    def receive_message(self,conn):
         received_data = pickle.loads(conn.recv(1024))
         mgs=b''
         while not(mgs):
@@ -199,7 +201,7 @@ class server:
         res = pickle.loads(mgs)
         return res
 
-    def serverthread(self):
+    def mainthread(self):
         while True:
             option=input("Enter your option:\n1. Discover the list of local files of the hostname\n2. Live check the hostname\n3. Close Server\n")
             if(option=="3"):
@@ -221,4 +223,4 @@ if __name__ == "__main__":
     serverlisten.setDaemon(True)
     serverlisten.start()
 
-    server.serverthread()
+    server.mainthread()
