@@ -1,0 +1,1 @@
+self.switch_regist_choice()
