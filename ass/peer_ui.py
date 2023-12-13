@@ -2,26 +2,25 @@ import tkinter as tk
 from tkinter import messagebox
 import re
 import sys
+from threading import Thread
 
-from client import Client
+from peer import peer_server,peer_peer
 
 CLIENT_COMMAND = "\n**** Invalid syntax ****\nFormat of client's commands\n1. publish lname fname\n2. fetch fname\n3. clear\n\n"
 
-PUBLISH_PATTERN = r"^publish\s[a-zA-Z]:[\/\\](?:[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]+[\sa-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]*[\/\\])*[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]+[\sa-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]*\.[A-Za-z0-9]+\s[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]+[\sa-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]*\.[A-Za-z0-9]+$"
+PUBLISH_PATTERN = r"^publish [a-zA-Z0-9]+\.[a-zA-Z0-9]+ [a-zA-Z0-9]+\.[a-zA-Z0-9]+"
 FETCH_PATTERN = r"^fetch\s[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]+[\sa-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"\\|,.<>\/?]*\.[A-Za-z0-9]+$"
 CLEAR_PATTERN = r"^clear$"
 
 class Client_App(tk.Tk):
-    def __init__(self, server_ip, server_port):
+    def __init__(self):
         super().__init__()
 
         # Some declarations
         self.username, self.password = None, None
         self.client = None
         self.client_on = None
-
-        self.server_ip = server_ip
-        self.server_port = server_port
+        self.conn_server = None
 
         self.mode = False
         self.list_of_ips = None
@@ -35,6 +34,11 @@ class Client_App(tk.Tk):
 
         self.current_page_frame = self.main_page()
         self.current_page_frame.pack()
+        
+        p2p = peer_peer()
+        Thread_With_Peer = Thread(target=p2p.Threadlisten, args=())
+        Thread_With_Peer.setDaemon(True)
+        Thread_With_Peer.start()
 
     def trigger(self, frame):
         """
@@ -64,15 +68,14 @@ class Client_App(tk.Tk):
             return
 
         # Send username and password to server step
-        self.client = Client(self.server_ip, self.server_port, username, password)
-        message = self.client.register()
-        self.client.stop()
+        self.client = peer_server()
+        conn = self.client.connect("192.168.137.2",3000)
+        message = self.client.regist_message(conn, username, password)
+        self.client.stop(conn)
         del self.client
 
-        if message == 'SERVER_CONNECT_ERROR':
-            messagebox.showerror("Lỗi đăng kí", "Kết nối với server không thành công.")
-        elif message == 'DUPLICATE':
-            messagebox.showerror("Lỗi đăng kí", "Username đã tồn tại.")
+        if message != 'Regist success':
+            messagebox.showerror("Lỗi đăng kí", message)
         else:
             messagebox.showinfo("Đăng kí thành công", "Đăng kí thành công! Vui lòng đăng nhập để sử dụng dịch vụ.")
 
@@ -129,26 +132,21 @@ class Client_App(tk.Tk):
             messagebox.showerror("Lỗi đăng nhập", "Vui lòng điền đầy đủ thông tin.")
             return
         
-        self.client = Client(self.server_ip, self.server_port, username, password)
-        message = self.client.log_in()
+        self.client = peer_server()
+        conn = self.client.connect("192.168.137.2",3000)
+        message = self.client.login_message(conn, username, password)
 
-        if not message == 'OK':
-            self.client.stop()
+        if not message == 'Login success':
+            self.client.stop(conn)
             del self.client
 
-        if message == 'SERVER_CONNECT_ERROR':
-            messagebox.showerror("Lỗi đăng nhập", "Kết nối với server không thành công.")
-        elif message == 'HOSTNAME':
-            messagebox.showerror("Lỗi đăng nhập", "Sai tên đăng nhập.")
-        elif message == 'PASSWORD':
-            messagebox.showerror("Lỗi đăng nhập", "Sai mật khẩu.")
-        elif message == 'AUTHENTIC':
-            messagebox.showerror("Lỗi đăng nhập", "Bạn đang cố gắng đăng nhập một tài khoản không thuộc về bạn. Vui lòng biết điều!!!")
+        if message != 'Login success':
+            messagebox.showerror("Lỗi đăng nhập", message)
         else:
             self.username = username
             self.password = password
             self.client_on = True
-
+            self.conn_server = conn
             messagebox.showinfo("Đăng nhập thành công", "Chào mừng, " + username + "!")
 
             self.current_page_frame.pack_forget()
@@ -216,18 +214,19 @@ class Client_App(tk.Tk):
             return "clear"
         if re.search(PUBLISH_PATTERN, command):
             _, lname, fname = command.split(" ")
-            message = self.client.publish(lname, fname)
-            if message == 'DUPLICATE':
-                return "File đã tồn tại."
+            message = self.client.publish(self.conn_server, lname, fname)
+            if message == 'No File':
+                return (f'There is no file named: {lname} in your local file system!')
             else:
                 return fname
         else:
             _, fname = command.split(" ")
-            message = self.client.fetch(fname)
-            if message == "NO_AVAILABLE_HOST":
-                return "Không có peer nào có file hoặc đang sẵn sàng."
-            else:
-                return [message, fname]
+            message = self.client.fetch(self.conn_server, fname)
+            return message
+            # if message == "NO_AVAILABLE_HOST":
+            #     return "Không có peer nào có file hoặc đang sẵn sàng."
+            # else:
+            #     return [message, fname]
 
             
     def add_files(self, fname, list_files):
@@ -258,17 +257,13 @@ class Client_App(tk.Tk):
                 output_field.insert(tk.END, f"\nNgười dùng chọn peer số {command}\n", "color")
                 output_field.see(tk.END)
                 ip = self.list_of_ips[int(command)-1]
-                message = self.client.retrieve(self.fname, ip)
+                message = self.client.download(self.fname, ip)
                 if message == 'DENIED':
-                    output_field.insert(tk.END, f"\nMáy đối phương không có file hoặc đường dẫn bị lỗi :(\n\n", "color")
-                    output_field.see(tk.END)
-                elif message == 'UNREACHABLE':
-                    output_field.insert(tk.END, f"\nKhông kết nối được!\n\n", "color")
+                    output_field.insert(tk.END, f"\nLỗi nhận file. Vui lòng thử lại.\n\n", "color")
                     output_field.see(tk.END)
                 else:
-                    file_size, download_time, speed = message
                     self.add_files(self.fname, list_files)
-                    output_field.insert(tk.END, f"\nĐã nhận file thành công!\nDung lượng: {file_size}\nThời gian tải: {download_time} (s)\nTốc độ tải file: {speed} (kbps)\n\n", "color")
+                    output_field.insert(tk.END, f"\nĐã nhận file thành công!\n\n", "color")
                     output_field.see(tk.END)   
                 
             self.mode = False
@@ -299,9 +294,13 @@ class Client_App(tk.Tk):
                     else:
                         output_field.insert(tk.END, f"\nDanh sách các peer:\n", "color")
                         output_field.see(tk.END)
-                        self.list_of_ips, self.fname = result
+                        print(result)
+                        messagebox.showinfo(result)
+                        input_command = command.split()
+                        self.fname = input_command[1]
+                        self.list_of_ips = result
                         for i in range(0, len(self.list_of_ips)):
-                            output_field.insert(tk.END, f"{i+1}. {self.list_of_ips[i]}\n", "color")
+                            output_field.insert(tk.END, f"{i+1}. {self.list_of_ips[i]['ipAdress']}\n", "color")
                             output_field.see(tk.END)
                         output_field.insert(tk.END, f"\nHãy chọn peer bạn mong muốn fetch!\n", "color")
                         output_field.see(tk.END)
@@ -310,8 +309,8 @@ class Client_App(tk.Tk):
         output_field.config(state=tk.DISABLED)
 
     def log_out(self):
-        self.client.stop()
         self.client_on = False
+        self.client.stop(self.conn_server)
         self.trigger(self.main_page)
 
     def terminal(self):
@@ -320,7 +319,7 @@ class Client_App(tk.Tk):
         header = tk.Label(terminal_frame, text = f"Hello, {self.username}", font=("San Serif", 11, "bold"))
         header.grid(row = 0, column = 0, padx = 5, pady = 5)
 
-        log_out_button = tk.Button(terminal_frame, text = "Log Out", command = self.log_out)
+        log_out_button = tk.Button(terminal_frame, text = "Log Out", command=self.log_out)
         log_out_button.grid(row = 0, column = 89, padx = 5, pady = 5)
         
 
@@ -348,24 +347,14 @@ class Client_App(tk.Tk):
         
         return terminal_frame
     
-    def close(self):
+    def close(self,conn):
         if self.client_on:
-            self.client.stop()
+            self.client.stop(conn)
         self.destroy()
 
 def main():
-    if len(sys.argv) < 3:
-        print("Please provide server ip number and server port number!")
-    if len(sys.argv) > 3:
-        print("Invalid syntax")
-
-    server_ip = sys.argv[1]
-    print(server_ip)
-    server_port = int(sys.argv[2])
-    print(server_port)
-
-    app = Client_App(server_ip, server_port)
-    app.protocol("WM_DELETE_WINDOW", app.close)
+    app = Client_App()
+    app.protocol("WM_DELETE_WINDOW", lambda: app.close(app.conn_server))
     app.mainloop()
 
 if __name__ == "__main__":

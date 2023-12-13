@@ -78,6 +78,7 @@ class Server:
                 return None
 
             if not self.server_on:
+                conn.close()
                 return
             
             msg_type = message.header.type_msg
@@ -275,17 +276,17 @@ class Server:
         res = pickle.loads(mgs)
         return res
 
-    # def mainthread(self):
-    #     while True:
-    #         option=input("Enter your option:\n1. Discover the list of local files of the hostname\n2. Live check the hostname\n3. Close Server\n")
-    #         if(option=="3"):
-    #             self.close()
-    #             break
-    #         hostname=input("Enter the hostname: ")
-    #         if(option=="1"):
-    #             Thread(target=self.discover, args=(hostname,)).start()
-    #         elif(option=="2"):
-    #             Thread(target=self.ping_host, args=(hostname,)).start()
+    def mainthread(self):
+        while True:
+            option=input("Enter your option:\n1. Discover the list of local files of the hostname\n2. Live check the hostname\n3. Close Server\n")
+            if(option=="3"):
+                self.close()
+                break
+            hostname=input("Enter the hostname: ")
+            if(option=="1"):
+                Thread(target=self.discover, args=(hostname,)).start()
+            elif(option=="2"):
+                Thread(target=self.ping_host, args=(hostname,)).start()
                 
     
     def run(self,opcode,hostname):
