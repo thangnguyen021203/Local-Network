@@ -25,16 +25,16 @@ class peer_peer:
         self.ip = socket.gethostbyname(socket.gethostname())
         self.port =_PEER_PORT
         
-    def ftpserver(self,hostname, port):
-        authorizer = DummyAuthorizer()
-        authorizer.add_user("user", "password", "./ass/local-repo", perm="elradfmw")
-        authorizer.add_anonymous("./ass/local-repo", perm="elradfmw")
+    # def ftpserver(self,hostname, port):
+    #     authorizer = DummyAuthorizer()
+    #     authorizer.add_user("user", "password", "./ass/local-repo", perm="elradfmw")
+    #     authorizer.add_anonymous("./ass/local-repo", perm="elradfmw")
 
-        handler = FTPHandler
-        handler.authorizer = authorizer
+    #     handler = FTPHandler
+    #     handler.authorizer = authorizer
 
-        server = FTPServer((hostname, port), handler)
-        server.serve_forever()
+    #     server = FTPServer((hostname, port), handler)
+    #     server.serve_forever()
         
     def receive_message_from(self,conn):
         received_data = int(pickle.loads(conn.recv(1024)))
@@ -46,7 +46,7 @@ class peer_peer:
         conn.sendall(pickle.dumps(msg))
     
     def Threadlisten(self):
-        self.ftpserver(self.ip,self.port)
+        # self.ftpserver(self.ip,self.port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.ip,self.port))
         self.socket.listen(5)
@@ -76,8 +76,9 @@ class peer_peer:
         message = msg.Message("download",None,None,_PEER_PORT,None,file_name)
         
         self.send_message(conn, message)
-        
+        print("send message")
         response = self.receive_message_from(conn)
+        print("receive message")
         data = response.body.content
 
         filereq=open(os.path.join(os.path.dirname(__file__),"local-repo",file_name),"wb")
