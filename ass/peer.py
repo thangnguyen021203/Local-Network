@@ -13,11 +13,17 @@ from ftplib import FTP
 
 _SERVER_PORT = 3000
 _PEER_PORT = 5001
+<<<<<<< HEAD
 _SERVER_HOST = "192.168.31.42"
 # _LOCAL_FILE_SYSTEM = './local-system/'
 _LOCAL_FILE_SYSTEM = os.path.join(os.path.dirname(__file__),'..','local-system/')
 # _LOCAL_REPOSITORY = './ass/local-repo/'
 _LOCAL_REPOSITORY = os.path.join(os.path.dirname(__file__),'local-repo/')
+=======
+_SERVER_HOST = "172.20.10.13"
+_LOCAL_FILE_SYSTEM = './local-system/'
+_LOCAL_REPOSITORY = './ass/local-repo/'
+>>>>>>> 15d8a5f427f95b9075b669c76b73a52a543631dc
 
 
 
@@ -85,8 +91,13 @@ class peer_peer:
         else:
             print("Download success!")
 
+<<<<<<< HEAD
     
     
+=======
+        
+
+>>>>>>> 15d8a5f427f95b9075b669c76b73a52a543631dc
 
     
 class peer_server:
@@ -187,11 +198,20 @@ class peer_server:
                         print("Invalid command. Type 'help' for more information.")
                     else:
                         peer_download = peer_peer()
+<<<<<<< HEAD
                         temp=Thread(target=peer_download.send, args=(input_command[1] ,input_command[2]))
                         temp.start()
                         temp.join()
                         message = msg.Message("announce",None,None,_PEER_PORT,None,input_command[2])     
                         self.send_message(conn,message) 
+=======
+                        temp = Thread(target=peer_download.send, args=(input_command[1] ,input_command[2]))
+                        temp.start()
+                        temp.join()
+                        message = msg.Message("announce",None,None,_PEER_PORT,None,input_command[2])     
+                        self.send_message(conn,message)
+                            
+>>>>>>> 15d8a5f427f95b9075b669c76b73a52a543631dc
                 case default:
                     print("Invalid command. Type 'help' for more information.")
             time.sleep(1)
