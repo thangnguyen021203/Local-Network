@@ -75,8 +75,9 @@ class peer_peer:
         message = msg.Message("download",None,None,_PEER_PORT,None,file_name)
         
         self.send_message(conn, message)
-        
+        print("send message")
         response = self.receive_message_from(conn)
+        print("receive message")
         data = response.body.content
 
         filereq=open(os.path.join(os.path.dirname(__file__),"local-repo",file_name),"wb")
