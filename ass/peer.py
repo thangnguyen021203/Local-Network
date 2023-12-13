@@ -59,6 +59,12 @@ class peer_peer:
         query = self.receive_message_from(conn)
         file_get = query.body.file_name
         
+        file=open(os.path.join(os.path.dirname(__file__),"local-repo",file_get),"rb")
+        data=file.read()
+        file.close()
+        message = msg.Message("download",None,None,_PEER_PORT,data,file_get)
+
+        self.send_message(conn, message)
         #protocol transfer file
         print(f"{file_get} transferred success.")
     
@@ -71,13 +77,14 @@ class peer_peer:
         
         self.send_message(conn, message)
         
-        ftp = FTP()
-        ftp.connect(host['ipAdress'], 5001)
-        ftp.login("", "")
-        
-        ftp.cwd("/")
-        ftp.retrbinary("RETR " + file_name, open(f"./ass/local-repo/{file_name}", "wb").write)
-        ftp.quit()
+        response = self.receive_message_from(conn)
+        data = response.body.content
+
+        filereq=open(os.path.join(os.path.dirname(__file__),"local-repo",file_name),"wb")
+        filereq.write(data)
+        filereq.close()
+
+        print(f"{file_name} receive success.")
         
         conn.close()
     
