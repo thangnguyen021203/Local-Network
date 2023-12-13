@@ -16,6 +16,9 @@ PING_PATTERN = r"^ping\s[\w.]+$"
 DISCOVER_PATTERN = r"^discover\s[\w.]+$"
 CLEAR_PATTERN = r"^clear$"
 
+IP_ADDRESS = "192.168.137.2"
+PORT = 3000
+
 class Server_App(tk.Tk):
     def __init__(self, server_port):
         super().__init__()
@@ -66,7 +69,7 @@ class Server_App(tk.Tk):
             messagebox.showerror("Lỗi đăng nhập", "Sai tên đăng nhập hoặc mật khẩu.")
             return
         
-        self.server = Server("192.168.31.42",3000,"serverdatabase.json") ###Liên kết
+        self.server = Server(IP_ADDRESS,PORT,"serverdatabase.json") ###Liên kết
         Thread(target=self.server.listen, args=(10,), daemon=True).start()
         self.server_on = True
         

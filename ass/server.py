@@ -68,34 +68,29 @@ class Server:
     def Threadconnection(self, conn, addr):
         print("Connect from ", addr)
         self.putQueueMessage(f"Connect from {addr}")
-        while True:
+        while True and self.server_on:
             try:
                 message = self.receive_message(conn)
-            except ConnectionError:
+            except Exception as e:
                 print(f"{addr[0]} has closed connection")
                 self.putQueueMessage(f"{addr[0]} has closed connection")
                 conn.close()
                 return None
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                self.putQueueMessage(f"An error occurred: {e}")
-                conn.close()
-                return None
 
-            self.handle_message_type(conn, addr[0], message)
+            if not self.server_on:
+                return
+            
+            msg_type = message.header.type_msg
 
-    def handle_message_type(self, conn, ip_address, message):
-        msg_type = message.header.type_msg
-
-        match msg_type:
-            case "regist":
-                self.regist(conn, ip_address, message.header.username, message.header.password, message.header.port)
-            case "login":
-                self.login(conn, ip_address, message.header.username, message.header.password)
-            case "announce":
-                self.announce(ip_address, message.body.file_name)
-            case "fetch":
-                self.fetch(conn, ip_address, message.body.file_name)
+            match msg_type:
+                case "regist":
+                    self.regist(conn, addr[0], message.header.username, message.header.password, message.header.port)
+                case "login":
+                    self.login(conn, addr[0], message.header.username, message.header.password)
+                case "announce":
+                    self.updatePeerRepo(addr[0], message.body.file_name)
+                case "fetch":
+                    self.fetch(conn, addr[0], message.body.file_name)
 
     def userInfo(self):
         self.db_mutex.acquire()
@@ -175,7 +170,7 @@ class Server:
         
         self.send_message(conn,res)
 
-    def announce(self, ipAddress, filename):
+    def updatePeerRepo(self, ipAddress, filename):
         print(ipAddress, f"has upload {filename} on local repository")
         # self.putQueueRequire(f'{ipAddress} has upload {filename} on local repository')
         ipaddress=ipAddress
@@ -270,7 +265,7 @@ class Server:
 
     def send_message(self, conn, msg):
         conn.send(pickle.dumps(f"{sys.getsizeof(pickle.dumps(msg))}"))
-        conn.send(pickle.dumps(msg))
+        conn.sendall(pickle.dumps(msg))
 
     def receive_message(self,conn):
         received_data = pickle.loads(conn.recv(1024))
@@ -280,17 +275,17 @@ class Server:
         res = pickle.loads(mgs)
         return res
 
-    def mainthread(self):
-        while True:
-            option=input("Enter your option:\n1. Discover the list of local files of the hostname\n2. Live check the hostname\n3. Close Server\n")
-            if(option=="3"):
-                self.close()
-                break
-            hostname=input("Enter the hostname: ")
-            if(option=="1"):
-                Thread(target=self.discover, args=(hostname,)).start()
-            elif(option=="2"):
-                Thread(target=self.ping_host, args=(hostname,)).start()
+    # def mainthread(self):
+    #     while True:
+    #         option=input("Enter your option:\n1. Discover the list of local files of the hostname\n2. Live check the hostname\n3. Close Server\n")
+    #         if(option=="3"):
+    #             self.close()
+    #             break
+    #         hostname=input("Enter the hostname: ")
+    #         if(option=="1"):
+    #             Thread(target=self.discover, args=(hostname,)).start()
+    #         elif(option=="2"):
+    #             Thread(target=self.ping_host, args=(hostname,)).start()
                 
     
     def run(self,opcode,hostname):
