@@ -13,9 +13,11 @@ from ftplib import FTP
 
 _SERVER_PORT = 3000
 _PEER_PORT = 5001
-_SERVER_HOST = "192.168.137.170"
-_LOCAL_FILE_SYSTEM = './local-system/'
-_LOCAL_REPOSITORY = './ass/local-repo/'
+_SERVER_HOST = "192.168.31.42"
+# _LOCAL_FILE_SYSTEM = './local-system/'
+_LOCAL_FILE_SYSTEM = os.path.join(os.path.dirname(__file__),'..','local-system/')
+# _LOCAL_REPOSITORY = './ass/local-repo/'
+_LOCAL_REPOSITORY = os.path.join(os.path.dirname(__file__),'local-repo/')
 
 
 
@@ -27,8 +29,8 @@ class peer_peer:
         
     def ftpserver(self,hostname, port):
         authorizer = DummyAuthorizer()
-        authorizer.add_user("user", "password", "./local-repo", perm="elradfmw")
-        authorizer.add_anonymous("./local-repo", perm="elradfmw")
+        authorizer.add_user("user", "password", "./ass/local-repo", perm="elradfmw")
+        authorizer.add_anonymous("./ass/local-repo", perm="elradfmw")
 
         handler = FTPHandler
         handler.authorizer = authorizer
@@ -75,13 +77,14 @@ class peer_peer:
         ftp.login("", "")
         
         ftp.cwd("/")
-        ftp.retrbinary("RETR " + file_name, open(f"C:/Users/Thang/Desktop/bigboss/ass/local-repo/{file_name}", "wb").write)
+        ftp.retrbinary("RETR " + file_name, open(f"./ass/local-repo/{file_name}", "wb").write)
         ftp.quit()
         
         if not os.path.exists(f'./ass/local-repo/{file_name}'):
             print("Download Error!. Please try again.")
         else:
             print("Download success!")
+
     
     
 
@@ -184,7 +187,11 @@ class peer_server:
                         print("Invalid command. Type 'help' for more information.")
                     else:
                         peer_download = peer_peer()
-                        Thread(target=peer_download.send, args=(input_command[1] ,input_command[2])).start()
+                        temp=Thread(target=peer_download.send, args=(input_command[1] ,input_command[2]))
+                        temp.start()
+                        temp.join()
+                        message = msg.Message("announce",None,None,_PEER_PORT,None,input_command[2])     
+                        self.send_message(conn,message) 
                 case default:
                     print("Invalid command. Type 'help' for more information.")
             time.sleep(1)
