@@ -17,7 +17,7 @@ _SERVER_HOST = "192.168.137.2"
 _LOCAL_FILE_SYSTEM = './local-system/'
 _LOCAL_REPOSITORY = './ass/local-repo/'
 
-
+server_conn = None
 
 class peer_peer:
     
@@ -64,14 +64,15 @@ class peer_peer:
     
     def send(self, host, file_name):
         conn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conn.connect((host, _PEER_PORT))
+ 
+        conn.connect((host['ipAdress'], _PEER_PORT))
         
-        message = msg.Message("download",username,password,_PEER_PORT,None,file_name)
+        message = msg.Message("download",None,None,_PEER_PORT,None,file_name)
         
         self.send_message(conn, message)
         
         ftp = FTP()
-        ftp.connect(host, 5001)
+        ftp.connect(host['ipAdress'], 5001)
         ftp.login("", "")
         
         ftp.cwd("/")
@@ -87,7 +88,12 @@ class peer_server:
         self.username=None
         self.password=None
         self.status = "OFF"
-      
+        self.conn = None
+    
+    def assign_server_conn(self, conn):
+        self.conn = conn
+        # print(self.conn)
+    
     def connect(self, host, port):
         conn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect((host, port))
@@ -202,12 +208,14 @@ class peer_server:
         return list_fname
 
     def download(self, fname, ip):
+        print(self.conn)
+        print(type(self.conn))
         peer_download = peer_peer()
         temp=Thread(target=peer_download.send, args=(ip, fname))
         temp.start()
         temp.join()
-        message = msg.Message("announce",None,None,_PEER_PORT,None,fname)     
-        self.send_message(conn,message)
+        message = msg.Message("announce",None,None,_PEER_PORT,None,fname)    
+        self.send_message(self.conn, message)
         if not os.path.exists(f'./ass/local-repo/{fname}'):
             return ("DENIED")
         else:
@@ -223,8 +231,8 @@ if __name__ == '__main__':
     Thread_With_Peer.start()
     
     conn = peer_server.connect(_SERVER_HOST,_SERVER_PORT)
-    # peer.peer_client_program(_SERVER_HOST,_SERVER_PORT)
-    
+
+    peer_server.assign_server_conn(conn)
     #LOGIN
     option = input("Login: 1\nRegist: 2\n")
     if (option == '1' or option == '2'):

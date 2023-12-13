@@ -134,6 +134,7 @@ class Client_App(tk.Tk):
         
         self.client = peer_server()
         conn = self.client.connect("192.168.137.2",3000)
+        self.client.assign_server_conn(conn)
         message = self.client.login_message(conn, username, password)
 
         if not message == 'Login success':
