@@ -13,17 +13,9 @@ from ftplib import FTP
 
 _SERVER_PORT = 3000
 _PEER_PORT = 5001
-<<<<<<< HEAD
-_SERVER_HOST = "192.168.31.42"
-# _LOCAL_FILE_SYSTEM = './local-system/'
-_LOCAL_FILE_SYSTEM = os.path.join(os.path.dirname(__file__),'..','local-system/')
-# _LOCAL_REPOSITORY = './ass/local-repo/'
-_LOCAL_REPOSITORY = os.path.join(os.path.dirname(__file__),'local-repo/')
-=======
-_SERVER_HOST = "172.20.10.13"
+_SERVER_HOST = "192.168.137.2"
 _LOCAL_FILE_SYSTEM = './local-system/'
 _LOCAL_REPOSITORY = './ass/local-repo/'
->>>>>>> 15d8a5f427f95b9075b669c76b73a52a543631dc
 
 
 
@@ -86,18 +78,8 @@ class peer_peer:
         ftp.retrbinary("RETR " + file_name, open(f"./ass/local-repo/{file_name}", "wb").write)
         ftp.quit()
         
-        if not os.path.exists(f'./ass/local-repo/{file_name}'):
-            print("Download Error!. Please try again.")
-        else:
-            print("Download success!")
-
-<<<<<<< HEAD
+        conn.close()
     
-    
-=======
-        
-
->>>>>>> 15d8a5f427f95b9075b669c76b73a52a543631dc
 
     
 class peer_server:
@@ -125,6 +107,7 @@ class peer_server:
             self.username = username
             self.password = password
             self.status = "ON"
+        return response
 
     def regist_message(self, conn,username,password):
         message = msg.Message("regist",username,password,_PEER_PORT,None,None)
@@ -139,6 +122,7 @@ class peer_server:
             self.username = username
             self.password = password
             self.status = "ON"
+        return response
      
     def receive_message_from(self,conn):
         received_data = int(pickle.loads(conn.recv(1024)))
@@ -151,7 +135,7 @@ class peer_server:
         
     def publish(self, conn, lname, fname):
         if not os.path.exists(f'./local-system/{lname}'):
-            print(f'There is no file named: {lname} in your local file system!')
+            return "No File"
         else:
             #coppy original file to local repository
             shutil.copy(_LOCAL_FILE_SYSTEM+ f'{lname}',  _LOCAL_REPOSITORY+ f'{fname}')
@@ -159,12 +143,13 @@ class peer_server:
             #Convey server
             message = msg.Message("announce",None,None,_PEER_PORT,None,fname)     
             self.send_message(conn,message) 
+            return "OK"
 
     def fetch(self, conn, fname):
         message = msg.Message("fetch",None,None,_PEER_PORT,None,fname)     
         self.send_message(conn,message)
         response = self.receive_message_from(conn)
-        print(response.body.content)
+        return response.body.content
         
     
     
@@ -198,26 +183,37 @@ class peer_server:
                         print("Invalid command. Type 'help' for more information.")
                     else:
                         peer_download = peer_peer()
-<<<<<<< HEAD
                         temp=Thread(target=peer_download.send, args=(input_command[1] ,input_command[2]))
                         temp.start()
                         temp.join()
                         message = msg.Message("announce",None,None,_PEER_PORT,None,input_command[2])     
                         self.send_message(conn,message) 
-=======
-                        temp = Thread(target=peer_download.send, args=(input_command[1] ,input_command[2]))
-                        temp.start()
-                        temp.join()
-                        message = msg.Message("announce",None,None,_PEER_PORT,None,input_command[2])     
-                        self.send_message(conn,message)
-                            
->>>>>>> 15d8a5f427f95b9075b669c76b73a52a543631dc
                 case default:
                     print("Invalid command. Type 'help' for more information.")
             time.sleep(1)
+    def stop(self, conn):
+        conn.close()
     
+    def get_fname(self):
+        list_fname = []
+        for filename in os.listdir('ass/local-repo'):
+            if os.path.isfile(os.path.join('ass/local-repo', filename)):
+                list_fname.append(filename)
+        return list_fname
 
-
+    def download(self, fname, ip):
+        peer_download = peer_peer()
+        temp=Thread(target=peer_download.send, args=(ip, fname))
+        temp.start()
+        temp.join()
+        message = msg.Message("announce",None,None,_PEER_PORT,None,fname)     
+        self.send_message(conn,message)
+        if not os.path.exists(f'./ass/local-repo/{fname}'):
+            return ("DENIED")
+        else:
+            return ("Download success!")
+        
+    
 if __name__ == '__main__':
     peer_server = peer_server()
     p2p = peer_peer()
