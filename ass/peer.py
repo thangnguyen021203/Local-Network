@@ -68,6 +68,7 @@ class peer_peer:
         print(f"{file_get} transferred success.")
     
     def send(self, host, file_name):
+        start_time = time.time()
         conn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
  
         conn.connect((host['ipAdress'], _PEER_PORT))
@@ -83,6 +84,15 @@ class peer_peer:
         filereq=open(os.path.join(os.path.dirname(__file__),"local-repo",file_name),"wb")
         filereq.write(data)
         filereq.close()
+        end_time = time.time()
+
+        file_size=os.path.getsize(os.path.join(os.path.dirname(__file__),"local-repo",file_name))
+
+        retrieve_time = end_time - start_time
+
+        speed=file_size/retrieve_time
+
+        
 
         print(f"{file_name} receive success.")
         
