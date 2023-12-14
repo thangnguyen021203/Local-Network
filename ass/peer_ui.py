@@ -296,7 +296,6 @@ class Client_App(tk.Tk):
                         output_field.insert(tk.END, f"\nDanh sách các peer:\n", "color")
                         output_field.see(tk.END)
                         print(result)
-                        messagebox.showinfo(result)
                         input_command = command.split()
                         self.fname = input_command[1]
                         self.list_of_ips = result
