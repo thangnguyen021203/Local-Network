@@ -63,12 +63,12 @@ class peer_peer:
         data=file.read()
         file.close()
         message = msg.Message("download",None,None,_PEER_PORT,data,file_get)
-
         self.send_message(conn, message)
         #protocol transfer file
         print(f"{file_get} transferred success.")
     
     def send(self, host, file_name):
+        start_time = time.time()
         conn=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
  
         conn.connect((host['ipAdress'], _PEER_PORT))
@@ -84,11 +84,21 @@ class peer_peer:
         filereq=open(os.path.join(os.path.dirname(__file__),"local-repo",file_name),"wb")
         filereq.write(data)
         filereq.close()
+        end_time = time.time()
+
+        self.file_size=os.path.getsize(os.path.join(os.path.dirname(__file__),"local-repo",file_name))
+
+        self.retrieve_time = float(end_time - start_time)
+
+        self.speed=self.file_size/self.retrieve_time
+
+        
 
         print(f"{file_name} receive success.")
         
         conn.close()
-    
+
+        return (self.file_size, self.retrieve_time)
 
     
 class peer_server:
@@ -222,6 +232,9 @@ class peer_server:
         temp=Thread(target=peer_download.send, args=(ip, fname))
         temp.start()
         temp.join()
+        self.file_size = peer_download.file_size
+        self.retrieve_time = peer_download.retrieve_time
+        self.speed = peer_download.speed
         message = msg.Message("announce",None,None,_PEER_PORT,None,fname)    
         self.send_message(self.conn, message)
         if not os.path.exists(f'./ass/local-repo/{fname}'):

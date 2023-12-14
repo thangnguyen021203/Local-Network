@@ -264,7 +264,7 @@ class Client_App(tk.Tk):
                     output_field.see(tk.END)
                 else:
                     self.add_files(self.fname, list_files)
-                    output_field.insert(tk.END, f"\nĐã nhận file thành công!\n\n", "color")
+                    output_field.insert(tk.END, f"\nĐã nhận file thành công!\n\nKích thước {self.client.file_size}B\n\nThời gian {self.client.retrieve_time}s\n\nTốc độ {self.client.speed}B/s", "color")
                     output_field.see(tk.END)   
                 
             self.mode = False
