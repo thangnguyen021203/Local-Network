@@ -12,6 +12,8 @@ PUBLISH_PATTERN = r"^publish [a-zA-Z0-9]+\.[a-zA-Z0-9]+ [a-zA-Z0-9]+\.[a-zA-Z0-9
 FETCH_PATTERN = r"^fetch\s[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"|,.<>?]+[\sa-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':\"\\|,.<>\/?]*\.[A-Za-z0-9]+$"
 CLEAR_PATTERN = r"^clear$"
 
+SERVER_IP = "192.168.137.1"
+
 class Client_App(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -69,7 +71,7 @@ class Client_App(tk.Tk):
 
         # Send username and password to server step
         self.client = peer_server()
-        conn = self.client.connect("192.168.137.2",3000)
+        conn = self.client.connect(SERVER_IP,3000)
         message = self.client.regist_message(conn, username, password)
         self.client.stop(conn)
         del self.client
@@ -133,7 +135,7 @@ class Client_App(tk.Tk):
             return
         
         self.client = peer_server()
-        conn = self.client.connect("192.168.137.2",3000)
+        conn = self.client.connect(SERVER_IP,3000)
         self.client.assign_server_conn(conn)
         message = self.client.login_message(conn, username, password)
 
